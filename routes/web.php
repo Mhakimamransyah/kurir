@@ -31,6 +31,12 @@ $router->group(['prefix'=>'email'],function() use ($router){
 	$router->get('/landing_verification',function(){
 		return view('email.afterverification',["link"=>"test"]);
 	});
+	$router->get('/forgot_password',function(){
+		return view('email.forgot_password',["code"=>8281]);
+	});
+	$router->get('/after_reset_password',function(){
+		return view('email.reset_password',["date"=>""]);
+	});
 });
 
 
@@ -43,6 +49,9 @@ $router->group(['prefix'=>'user'],function() use ($router){
 	$router->post('/register','UserController@create_manual');
 	$router->post('/google_sign_in','UserController@create_google_sign_in');
 	$router->post('/login','UserController@doLoginUser');
+	$router->post('/forgot','UserController@send_forgot_password');
+	$router->post('/update_forgot_password','UserController@update_forgot_password');
+    $router->post('/update_password','UserController@update_password');
 });
 
 // router untuk akses pelanggan
@@ -89,6 +98,15 @@ $router->group(['prefix'=>'order'],function() use ($router){
 
 	$router->post('/selesai_destinasi','OrderController@kurir_selesaikan_destinasi'); // di luar sesi gunakan FCM
 	$router->post('/rating','OrderController@pelanggan_rating_kurir');
+});
+
+// router untuk akses kurir
+$router->group(['prefix'=>'sistem'],function() use ($router){
+	$router->get('/',function(){
+		return "<h1>Router khusus sistem</h1>";
+	});
+    $router->get('/destinasi','SistemController@sistem_destinasi');
+    $router->post('/notifikasi','SistemController@sistem_notif');
 
 });
 

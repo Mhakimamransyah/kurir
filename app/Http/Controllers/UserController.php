@@ -33,7 +33,6 @@ class UserController extends Controller
             "no_hp"   => "",
             "nama"    => ""
         ];
-
     }
 
     public function list_user(Request $request){
@@ -300,10 +299,112 @@ class UserController extends Controller
                    return ResponseBuilder::result(false,$e->getMessage(),[],400);
             }
          }
+    }
 
+    public function send_forgot_password(Request $request){
+      
+       $this->validate($request,[
+          "email" => "required"
+       ]);
+
+       // periksa apakah email ada dan teregistrasi secara manual
+       $user = User::where("email",$request->email);
+       if($user->exists()){
+         $jenis_registrasi = $user->first()->jenis_registrasi;
+         if($jenis_registrasi == "Manual"){
+
+            $pass_code = rand(10000,99999);
+            $user->update([
+              "pass_code_forgot_password" => $pass_code
+            ]);
+            MailBuilder::send_email('email.forgot_password',["code"=>$pass_code],$user->first()->email,"Forgot Password");
+             return ResponseBuilder::result(true,"Pass code dikirimkan",[],200); 
+
+         }else if($jenis_registrasi == "Gmail"){
+          // terdaftar menggunakan google sign in 
+            return ResponseBuilder::result(false,"Anda terdaftar menggunakan google sign in",[],400);
+         }
+       }else{
+         return ResponseBuilder::result(false,"Email tidak di temukan",[],400);
+       }
+    }
+
+    public function update_forgot_password(Request $request){
+       
+       $this->validate($request,[
+          "email" => "required",
+          "pass_code" => "required|regex:/[0-9]/",
+          'password' => 'required|min:6|regex:/[0-9]/|regex:/[a-zA-z]/|same:confirm_password',
+          'confirm_password' => 'required|min:6|regex:/[0-9]/|regex:/[a-zA-z]/'
+       ]);
+       
+       // periksa apakah email terdaftar
+       $user = User::where("email",$request->email);
+       if($user->exists()){
+            // periksa jenis registrasi
+         $jenis_registrasi = $user->first()->jenis_registrasi;
+         if($jenis_registrasi == "Manual"){
+            // periksa apakah pass code cocok
+            $pass_code = $user->first()->pass_code_forgot_password;
+            if($pass_code == $request->pass_code){
+               $result = tap($user)->update([
+                 "password" => Hash::make($request->input('password')),
+                 "pass_code_forgot_password" => null
+               ]);
+               // send email here
+               MailBuilder::send_email('email.reset_password',
+                ["date"=>date_format($result->first()->modified_date,"d-m-Y H:i:s")],
+                $request->email,
+                "Password Diperbarui");
+               return ResponseBuilder::result(true,"Password berhasil di perbarui",[],200);
+            }else{
+               return ResponseBuilder::result(false,"Pass code tidak cocok",[],400);
+            }
+         }else if($jenis_registrasi == "Gmail"){
+          // terdaftar menggunakan google sign in 
+            return ResponseBuilder::result(false,"Anda terdaftar menggunakan google sign in",[],400);
+         }
+       }else{
+         return ResponseBuilder::result(false,"Email tidak di temukan",[],400);
+       }
 
     }
 
+    public function update_password(Request $request){
 
-    //
+      $this->validate($request,[
+        "email" => "required",
+        'password_lama' => 'required|min:6|regex:/[0-9]/|regex:/[a-zA-z]/',
+        'password_baru' => 'required|min:6|regex:/[0-9]/|regex:/[a-zA-z]/|same:confirm_password_baru',
+        'confirm_password_baru' => 'required|min:6|regex:/[0-9]/|regex:/[a-zA-z]/'
+      ]);
+
+       // periksa apakah email terdaftar
+       $user = User::where("email",$request->email);
+       // var_dump($user->first()->password);
+       // var_dump($request->input('password_lama'));
+       // exit();
+       if($user->exists()){
+          // periksa kecocokan dengan password lama
+          if(Hash::check($request->input('password_lama'),$user->first()->password)){
+            // password lama cocok
+            $new_password = Hash::make($request->input('password_baru'));
+            $result = tap($user)->update([
+                 "password" => Hash::make($request->input('password_lama'))
+            ]);
+            MailBuilder::send_email('email.reset_password',
+                ["date"=>date_format($result->first()->modified_date,"d-m-Y H:i:s")],
+                $request->email,
+                "Password Diperbarui");
+            return ResponseBuilder::result(true,"Password berhasil di perbarui",[],200);
+          }else{
+            // password lama tidak cocok
+            return ResponseBuilder::result(false,"Password lama anda tidak cocok",[],400);
+          }
+       }else{
+         return ResponseBuilder::result(false,"Email tidak di temukan",[],400);
+       }
+
+    }
+
 }

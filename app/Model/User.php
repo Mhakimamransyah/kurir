@@ -14,7 +14,7 @@ class User extends Model
 	const CREATED_AT = 'created_date';
 	const UPDATED_AT = 'modified_date';
 	protected $fillable = [
-		'email', 'token_fcm', 'jenis_registrasi', 'password', 'api_token', 'id_role','is_activate','token_aktivasi'
+		'email', 'token_fcm', 'jenis_registrasi','pass_code_forgot_password', 'password', 'api_token', 'id_role','is_activate','token_aktivasi'
 	];
 
     /**

@@ -28,24 +28,40 @@ class Lihat_order{
   }
 
   public function do_lihat_order($param){
-    // periksa dulu yang destination failed nya 0
-     $this->destination_failed($param["id_order"]);
-     if(isset($param["id_order_detail"])){
-         $this->lihat_detail($param);
+     
+     // periksa dulu yang destination failed nya 0
+     // periksa jika status tidak sama dengan selesai dengan rating tidak null, pelanggan_batal, kurir_batal,kurir_tidak_ada 
+     
+     $order = Order_m::where("id_order",$param['id_order'])->first();
+     if($order != "" && $order->status != 'pelanggan_batal' && $order->status != 'kurir_batal' && $order->status != 'kurir_tidak_ada' && $order->rating == ""){
+
+         $this->destination_failed($param["id_order"]);
+         if(isset($param["id_order_detail"])){
+               $this->lihat_detail($param);
+         }else{
+               $this->listing($param);
+         }
+        return $this->result;
+     
      }else{
-         $this->listing($param);
+        throw new \App\Exceptions\MyException([
+         "message" => "Order tidak ada"
+       ]);
      }
-     return $this->result;
+
+     
   }
 
   private function listing($param){
-     $this->result["jenis"] = "Daftar tujuan pesan";
+     $this->result["jenis"] = "Daftar destinasi";
      $data = Order_Kurir::where("id_order",$param["id_order"])->whereIn("aksi",["Setuju","Charge"])->latest()->first();
+     $order  = Order_m::find($param["id_order"]);
      if(!empty($data)){
+       $this->result["kondisi_order"]      = $order->status;
        $this->result["kurir"] = Kurir::find($data->id_kurir)->first()->toArray();
-       $detail = Order_m::find($param["id_order"])->order_detail;
+       $detail = $order->order_detail;
 
-       $this->result["Jenis_order"] = Order_m::find($param["id_order"])->order_jenis->toArray();
+       $this->result["Jenis_order"]  = Order_m::find($param["id_order"])->order_jenis->toArray();
        
        $list = [];
        $sum  = 0;
@@ -62,7 +78,9 @@ class Lihat_order{
               "jarak"                  => $obj_detail->jarak." km",
               "charge_jarak"           => $obj_detail->tarif_charge_jarak,
               "charge_beban"           => $obj_detail->tarif_charge_beban,
-              "tarif_total_destinasi"  => $tarif_destinasi
+              "tarif_total_destinasi"  => $tarif_destinasi,
+              "selesai"                => ($obj_detail->foto_selesai != "")? true : false,
+              "foto_selesai"           => $obj_detail->foto_selesai
           ];
 
           $sum = $sum + $tarif_destinasi;
@@ -70,8 +88,7 @@ class Lihat_order{
 
        $this->result["list"] = $list;
        $this->result["total_harga"] = $sum;
-
-
+      
      }else{
        // throw back error // tidak ada kurir yang setuju atau charge
        throw new \App\Exceptions\MyException([
@@ -83,25 +100,36 @@ class Lihat_order{
 
   private function lihat_detail($param){
     $this->result["jenis"] = "Detail destinasi";
-    
+    $this->result["kondisi_order"]      = Order_m::where("id_order",$param['id_order'])->first()->status;
 
     $detail = Order_detail::find($param["id_order_detail"]);
-    if($detail != null){ 
+    if($detail!= '' && $detail->id_order == $param["id_order"]){
+       if($detail != null){ 
         $barang    = $detail->order_barang;
         $destinasi = Destinasi::get_detail($detail->order_destinasi);
         $this->result["Jenis_order"] = Order_m::find($param["id_order"])->order_jenis->toArray();
         $this->result["data_barang"]    = $barang;
+        $this->result["foto_selesai"]   = [
+                                              "foto_selesai"     => $detail->foto_selesai,
+                                              "selesai_pada_jam" => $detail->modified_date
+                                          ];
         $this->result["data_destinasi"] = $destinasi;
         $this->result["jarak"]          = $detail->jarak." km";
         $this->result["charge_jarak"]   = $detail->tarif_charge_jarak;
         $this->result["charge_beban"]   = $detail->tarif_charge_beban;
         $this->result["charge_beban"]   = $detail->tarif_charge_beban;
         $this->result["tarif_total_destinasi"]   = Tarif::get_total($param["id_order"],$detail->tarif_charge_jarak,$detail->tarif_charge_beban);
+        $this->result["kondisi"] = "order_ada";
 
+        }else{
+            throw new \App\Exceptions\MyException([
+             "message" => "Terjadi kesalahan, detail tidak ditemukan"
+           ]);
+        }
     }else{
-        throw new \App\Exceptions\MyException([
-         "message" => "Terjadi kesalahan, detail tidak ditemukan"
-       ]);
+       throw new \App\Exceptions\MyException([
+             "message" => "Terjadi kesalahan, detail tidak ditemukan "
+        ]);
     }
   }
 
@@ -142,6 +170,10 @@ class Lihat_order{
      }
 
      return $result;
+     
+  }
+
+  public function destination_finish($param){
      
   }
 

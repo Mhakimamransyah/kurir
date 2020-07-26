@@ -351,9 +351,7 @@ class Order{
          return "destinasi di selesaikan";
 
         // BERITAHU PELANGGAN ADA DESTINASI YANG TELAH SELESAI FCM
-       }
-
-       
+       }       
     }
 }
 

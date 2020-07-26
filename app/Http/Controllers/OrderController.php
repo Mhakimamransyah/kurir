@@ -22,6 +22,7 @@ class OrderController extends Controller
     public function __construct()
     {
         // middleware disini
+      $this->middleware('auth');
       $this->middleware('trans',['only' => ['pelanggan_deal_charge','order_baru','pelanggan_cancel_charge','kurir_deal_order','kurir_selesaikan_destinasi','pelanggan_rating_kurir']]);      
     }
 
@@ -212,6 +213,8 @@ class OrderController extends Controller
        ]);  
        return ResponseBuilder::result(true,"Sukses rating diberikan",[],200,true);
     }
+
+    
 
 
 

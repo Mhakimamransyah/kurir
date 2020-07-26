@@ -26,7 +26,6 @@ class PelangganController extends Controller
     }
 
     public function updateProfile(Request $request){
-   
           $result = Pelanggan::where("id_pelanggan",$request->id_pelanggan);
           if($result->count() > 0){
           	// Jika ada di tabel pelanggan
@@ -42,13 +41,20 @@ class PelangganController extends Controller
              if($request->filled(["id_user"])){
                 
                 try{
-                   Pelanggan::create([
-	                  "nama_pelanggan"  => $request->nama,
-	                  "nomor_hp_pelanggan" => $request->no_hp,
-	                  "id_user"         => $request->id_user
-                  ]);
+                   $result = Pelanggan::create([
+                    "nama_pelanggan"  => $request->nama,
+                    "nomor_hp_pelanggan" => $request->no_hp,
+                    "id_user"         => $request->id_user
+                   ]);
+                   
+                   $response = [
+                       "nama" => $request->nama,
+                       "no_hp" => $request->no_hp,
+                       "id_user" => $request->id_user,
+                       "id_pelanggan" => $result->id_pelanggan
+                    ];
 
-                  return ResponseBuilder::result(false,"Profile diperbarui",[],200);     	
+                  return ResponseBuilder::result(true,"Profile diperbarui",$response,200);    
                 }catch(Exception $e){
                    return ResponseBuilder::result(false,$e->getMessage(),[],400);
                 }
@@ -67,12 +73,15 @@ class PelangganController extends Controller
        $validator = \Validator::make($request->all(), [
             'alamat_patokan' => 'required',
             'kordinat_patokan' => 'required',
+            "nama_penerima_patokan" => 'required',
+            "no_hp_penerima_patokan" => "required",
             'detail_patokan' => 'required|min:7',
             'id_jenis_patokan' => 'required|regex:/[0-9]/',
             'id_pelanggan' => 'required|regex:/[0-9]/',
             'foto_patokan' => 'required|image|max:10000' // maksium foto 10 mb
         ]);
 
+  
         if ($validator->fails()) {
             return ResponseBuilder::result(false,$validator->errors(),[],400);
         }else{
@@ -94,6 +103,8 @@ class PelangganController extends Controller
                    "detail_patokan" => $request->detail_patokan,
                    "id_jenis_patokan" => $request->id_jenis_patokan,
                    "id_pelanggan" => $request->id_pelanggan,
+                   "nama_penerima_patokan" => $request->nama_penerima_patokan,
+                   "no_hp_penerima_patokan" => $request->no_hp_penerima_patokan,
                    "foto_patokan" => $nama_file
                  ]);
                  return ResponseBuilder::result(true,"Sukses, patokan di perbarui",[],200);
@@ -110,6 +121,8 @@ class PelangganController extends Controller
                    "detail_patokan" => $request->detail_patokan,
                    "id_jenis_patokan" => $request->id_jenis_patokan,
                    "id_pelanggan" => $request->id_pelanggan,
+                   "nama_penerima_patokan" => $request->nama_penerima_patokan,
+                   "no_hp_penerima_patokan" => $request->no_hp_penerima_patokan,
                    "foto_patokan" => $nama_file
                  ]);
                  return ResponseBuilder::result(true,"Sukses, patokan di tambahkan",[],200);

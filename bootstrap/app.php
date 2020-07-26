@@ -77,9 +77,13 @@ $app->routeMiddleware([
 |
 */
 
+
+
 $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\AuthServiceProvider::class);
 $app->register(Illuminate\Mail\MailServiceProvider::class);
+$app->configure('laravel-fcm');
+$app->register(Kawankoding\Fcm\FcmServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
 
 /*

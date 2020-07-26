@@ -11,7 +11,7 @@ class Pelanggan_patokan extends Model
 	const CREATED_AT = 'created_date';
 	const UPDATED_AT = 'modified_date';
 	protected $fillable = [
-		'kode_patokan','alamat_patokan','kordinat_patokan','foto_patokan','detail_patokan','id_jenis_patokan','id_pelanggan'
+		'kode_patokan','alamat_patokan',"nama_penerima_patokan","no_hp_penerima_patokan",'kordinat_patokan','foto_patokan','detail_patokan','id_jenis_patokan','id_pelanggan'
 	];
 
     /**
