@@ -33,6 +33,10 @@ class User extends Model
     public function kurir(){
         return $this->hasOne('App\Model\kurir','id_user');
     }
+
+    public function role(){
+        return $this->belongsTo('App\Model\Role','id_role');
+    }
 }
 
 

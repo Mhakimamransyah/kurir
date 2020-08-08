@@ -8,7 +8,7 @@ class Order_m extends Model
 	const CREATED_AT = 'created_date';
 	const UPDATED_AT = 'modified_date';
 	protected $fillable = [
-		'kordinat_order', 'alamat_order', 'status', 'id_pelanggan', 'id_order_jenis','destination_failed'
+		'kordinat_order', 'alamat_order', 'status', 'expired_count','id_pelanggan', 'id_order_jenis','destination_failed'
 	];
 
     /**
@@ -35,5 +35,9 @@ class Order_m extends Model
 
     public function order_detail(){
        return $this->hasMany('App\Model\Order_detail','id_order');   
+    }
+
+    public function sistem_chat(){
+      return $this->hasMany('App\Model\Sistem_chat','id_order');      
     }
 }

@@ -137,6 +137,16 @@ class OrderController extends Controller
         return ResponseBuilder::result(true,"Sukses, order di setujui",[],200,true);
     }
 
+    public function kurir_tolak_order(Request $request){
+       $this->validate($request,[
+          "id_order" => "required|regex:/[0-9]/",
+          "id_kurir"  => "required|regex:/[0-9]/",
+       ]);
+       $order = new Response_kurir();
+       $order->kurir_tolak($request->toArray());
+       return ResponseBuilder::result(true,"Sukses, order di tolak",[],200,true);
+    }
+
     public function pelanggan_deal_charge(Request $request){
        
        $this->validate($request,[

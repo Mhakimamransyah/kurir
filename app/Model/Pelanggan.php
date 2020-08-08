@@ -13,11 +13,11 @@ class Pelanggan extends Model
 	];
 
 	public function user(){
-        return $this->belongsTo('App\Model\User');
+        return $this->belongsTo('App\Model\User','id_user');
     }
 
     public function patokan(){
-       return $this->hasMany('App\Model\Pelanggan_patokan');
+       return $this->hasMany('App\Model\Pelanggan_patokan','id_user');
     }
 
 }

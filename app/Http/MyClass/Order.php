@@ -243,60 +243,78 @@ class Order{
 
     public function periksa_sesi_order($param){
         $order = Order_Kurir::where("id_order",$param["id_order"])->latest()->first();
-        if($order->aksi == "Baru"){
-          // orderan masih baru
-          return [
-             "status_order" => 0, // baru
-             "kondisi_order" => true, // sesi order lanjut
-             "message_order" => "Masih menunggu konfirmasi kurir"
-          ];
+        
+        // periksa expiration date jika masih valid (tidak sama dengan 0) order masih aktif
+        if($order->expired_count > 0){
 
-        }else if($order->aksi == "Setuju"){
-          // kurir setuju
-          Order_m::where("id_order",$param["id_order"])->update(["status"=>"kurir_setuju"]);
-          return [
-             "status_order" => 1, // kurir setuju
-             "kondisi_sesi_order" => true, // sesi order lanjut
-             "message_order" => "Kurir ditemukan"
-          ];
+          $order->decrement('expired_count',1);
 
-        }else if($order->aksi == "Tolak"){
-          // kurir menolak
-
-          // routing kurir lain
-          $routing = new Routing_kurir();
-          $id_kurir = $routing->cari_kurir($param,"penolakan");
-          if($id_kurir != -1){
-            // ada kurir lain
-            Order_Kurir::create([
-               "id_order" => $param["id_order"],
-               "id_kurir" => $id_kurir,
-               "aksi"     => "Baru"
-            ]);
+          // kurangi expiration_date
+          if($order->aksi == "Baru"){
+            // orderan masih baru
             return [
-               "status_order" => 3, // order di tolak dan masih ada kurir yang lain masih menunggu 
-               "kondisi_sesi_order" => true, // sesi order lanjut
+               "status_order" => 0, // baru
+               "kondisi_order" => true, // sesi order lanjut
                "message_order" => "Masih menunggu konfirmasi kurir"
-            ]; 
+            ];
+
+          }else if($order->aksi == "Setuju"){
+            // kurir setuju
+            Order_m::where("id_order",$param["id_order"])->update(["status"=>"kurir_setuju"]);
+            return [
+               "status_order" => 1, // kurir setuju
+               "kondisi_sesi_order" => true, // sesi order lanjut
+               "message_order" => "Kurir ditemukan"
+            ];
+
+          }else if($order->aksi == "Tolak"){
+            // kurir menolak
+
+            // routing kurir lain
+            $routing = new Routing_kurir();
+            $id_kurir = $routing->cari_kurir($param,"penolakan");
+            if($id_kurir != -1){
+              // ada kurir lain
+              Order_Kurir::create([
+                 "id_order" => $param["id_order"],
+                 "id_kurir" => $id_kurir,
+                 "aksi"     => "Baru"
+              ]);
+              return [
+                 "status_order" => 3, // order di tolak dan masih ada kurir yang lain masih menunggu 
+                 "kondisi_sesi_order" => true, // sesi order lanjut
+                 "message_order" => "Masih menunggu konfirmasi kurir"
+              ]; 
+
+            }else{
+              // tidak ada kurir lain
+               Order_m::where("id_order",$param["id_order"])->update(["status"=>"kurir_tidak_tersedia"]);
+               return [
+                 "status_order" => 2, // order di tolak dan tidak ada kurir lagi
+                 "kondisi_sesi_order" => false, // sesi order batal
+                 "message_order" => "Kurir tidak ditemukan"
+               ];            
+            }
 
           }else{
-            // tidak ada kurir lain
-             Order_m::where("id_order",$param["id_order"])->update(["status"=>"kurir_tidak_tersedia"]);
+            // kurir setuju tapi di charge
+             Order_m::where("id_order",$param["id_order"])->update(["status"=>"pelanggan_menunggu_konfirmasi_charge"]);
              return [
-               "status_order" => 2, // order di tolak dan tidak ada kurir lagi
-               "kondisi_sesi_order" => false, // sesi order batal
-               "message_order" => "Kurir tidak ditemukan"
-             ];            
+                 "status_order" => 4, // order diterima tapi dicharge oleh kurir
+                 "kondisi_sesi_order" => true, // sesi order batal
+                 "message_order" => "Kurir ditemukan dan melakukan charge barang"
+              ];            
           }
-
         }else{
-          // kurir setuju tapi di charge
-           Order_m::where("id_order",$param["id_order"])->update(["status"=>"pelanggan_menunggu_konfirmasi_charge"]);
-           return [
-               "status_order" => 4, // order diterima tapi dicharge oleh kurir
-               "kondisi_sesi_order" => true, // sesi order batal
-               "message_order" => "Kurir ditemukan dan melakukan charge barang"
-            ];            
+          // sesi sudah habis kurir tidak memberikan jawaban
+          Order_m::find($param["id_order"])->update([
+             "status" => "kurir_tidak_response"
+          ]);
+          return [
+                 "status_order" => 5, // order expired
+                 "kondisi_sesi_order" => false, // sesi order batal
+                 "message_order" => "Sesi Order Habis"
+          ];  
         }
     }
 
@@ -304,7 +322,8 @@ class Order{
       // pelanggan setuju dengan charge dari kurir
       // in transaction
        Order_m::where("id_order",$param["id_order"])->update(["status"=>"pelanggan_setuju"]);
-
+       
+       Notification::send_notif($id_pelanggan,"pelanggan",["data" => ["status" => "kurir_charge"],"title" => "Tarif charge di setujui", "body" => "Charge di setujui pelanggan"]);
       //FCM di SINI
     }
 

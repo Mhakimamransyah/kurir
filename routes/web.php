@@ -93,6 +93,7 @@ $router->group(['prefix'=>'order'],function() use ($router){
 	$router->post('/deal_charge','OrderController@pelanggan_deal_charge'); // di luar sesi gunakan FCM
 	$router->post('/pelanggan_cancel_order','OrderController@pelanggan_cancel_order'); // di luar sesi gunakan FCM
 	$router->post('/kurir_deal','OrderController@kurir_deal_order');
+	$router->post('/kurir_tolak','OrderController@kurir_tolak_order');
 	$router->get('/lihat','OrderController@lihat_order');
 	$router->get('/maps','OrderController@lihat_maps');
 
@@ -100,14 +101,17 @@ $router->group(['prefix'=>'order'],function() use ($router){
 	$router->post('/rating','OrderController@pelanggan_rating_kurir');
 });
 
-// router untuk akses kurir
-$router->group(['prefix'=>'sistem'],function() use ($router){
+// router untuk sistem
+$router->group(['prefix'=>'sistem','middleware' => 'auth'],function() use ($router){
 	$router->get('/',function(){
 		return "<h1>Router khusus sistem</h1>";
 	});
+	$router->get('/landing','SistemController@sistem_landing');
+	$router->get('/page','SistemController@sistem_page');
     $router->get('/destinasi','SistemController@sistem_destinasi');
     $router->post('/notifikasi','SistemController@sistem_notif');
-
+    $router->post('/chat','SistemController@sistem_send_chat');
+    $router->post('/read-chat','SistemController@sistem_read_chat');
 });
 
 

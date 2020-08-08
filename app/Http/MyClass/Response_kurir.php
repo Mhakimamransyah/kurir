@@ -40,6 +40,12 @@ class Response_kurir{
 
   }
 
+  public function kurir_tolak($param){
+    Order_Kurir::where("id_order",$param["id_order"])->where("id_kurir",$param['id_kurir'])->update([
+        "aksi" => "Tolak"
+     ]);
+  }
+
   public function kurir_charge($param){
     // kurir melakukan charge order
      $result = [];
@@ -59,6 +65,9 @@ class Response_kurir{
 
        // FCM DI SINI KASIH TAHU PELANGGAN
        // KURIR MELAKUKAN CHARGE LAGI
+       
+       $id_pelanggan = Order_m::where("id_order",$param['id_order'])->first()->id_pelanggan;
+       Notification::send_notif($id_pelanggan,"pelanggan",["data" => ["status" => "kurir_charge"],"title" => "Tarif di charge", "body" => "Pesanan anda di charge oleh kurir"]);
 
        return [
            "status" => true

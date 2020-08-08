@@ -33,9 +33,10 @@ class Lihat_order{
      // periksa jika status tidak sama dengan selesai dengan rating tidak null, pelanggan_batal, kurir_batal,kurir_tidak_ada 
      
      $order = Order_m::where("id_order",$param['id_order'])->first();
-     if($order != "" && $order->status != 'pelanggan_batal' && $order->status != 'kurir_batal' && $order->status != 'kurir_tidak_ada' && $order->rating == ""){
+     if($order != "" && $order->status != 'pelanggan_batal' && $order->status != 'kurir_batal' && $order->status != 'kurir_tidak_response' && $order->rating == ""){
 
          $this->destination_failed($param["id_order"]);
+
          if(isset($param["id_order_detail"])){
                $this->lihat_detail($param);
          }else{
@@ -53,12 +54,13 @@ class Lihat_order{
   }
 
   private function listing($param){
+
      $this->result["jenis"] = "Daftar destinasi";
      $data = Order_Kurir::where("id_order",$param["id_order"])->whereIn("aksi",["Setuju","Charge"])->latest()->first();
      $order  = Order_m::find($param["id_order"]);
      if(!empty($data)){
-       $this->result["kondisi_order"]      = $order->status;
-       $this->result["kurir"] = Kurir::find($data->id_kurir)->first()->toArray();
+       $this->result["kondisi_order"]   = $order->status;
+       $this->result["kurir"]           = Kurir::find($data->id_kurir)->first()->toArray();
        $detail = $order->order_detail;
 
        $this->result["Jenis_order"]  = Order_m::find($param["id_order"])->order_jenis->toArray();

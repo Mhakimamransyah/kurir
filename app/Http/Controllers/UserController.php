@@ -33,6 +33,7 @@ class UserController extends Controller
             "no_hp"   => "",
             "nama"    => ""
         ];
+        $this->middleware('trans',['only' => ['update_password']]); 
     }
 
     public function list_user(Request $request){
