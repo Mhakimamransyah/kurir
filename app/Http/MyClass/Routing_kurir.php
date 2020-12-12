@@ -12,35 +12,35 @@ class Routing_kurir{
 
 	public function __construct()
     {
-        
+
     }
 
     public static function kurir_tersedia(){
         // periksa apakah ada kurir yang tersedia
         $result = true;
-        $kurir = Kurir::where("mode","aktif");
+        $kurir = Kurir::where("mode","aktif")->where("sesi_login_aktif","ya");
         if($kurir->count() <= 0){
-           $result = false;
-        }
-        return $result;
-    }
+         $result = false;
+     }
+     return $result;
+ }
 
-   
-    public static function cari_kurir($param,$jenis="baru"){
-       
+
+ public static function cari_kurir($param,$jenis="baru"){
+
        // cari kurir yang paling dekat dari titik kordinat dan
        // tidak pernah nolak id order ini sebelumnya dan
        // sedang aktif
        // outputnya id kurir
-        $kurirs = [];
-        if($jenis == "baru"){
+    $kurirs = [];
+    if($jenis == "baru"){
             // untuk pesanan baru
-            $kurirs = Kurir::where("mode","aktif")->get();
-        }else{
+        $kurirs = Kurir::where("mode","aktif")->where("sesi_login_aktif","ya")->get();
+    }else{
             // untuk mencari kurir lagi setelah kurir yang dipilih sebelumnya menolak
-            $kurir_penolak = Order_Kurir::where("id_order",$param['id_order'])->where("aksi","Tolak")->pluck('id_kurir')->toArray();
-            $kurirs = Kurir::where("mode","aktif")->whereNotIn('id_kurir',$kurir_penolak)->get();
-        }
+        $kurir_penolak = Order_Kurir::where("id_order",$param['id_order'])->where("aksi","Tolak")->pluck('id_kurir')->toArray();
+        $kurirs = Kurir::where("mode","aktif")->where("sesi_login_aktif","ya")->whereNotIn('id_kurir',$kurir_penolak)->get();
+    }
 
         $id_kurir_terdekat = -1; // tidak ada kurir
         $jarak_terdekat = 999999;
@@ -57,7 +57,7 @@ class Routing_kurir{
                 }
             }
         }
-         
+
         return $id_kurir_terdekat;     
     }
 

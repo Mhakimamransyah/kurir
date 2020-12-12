@@ -24,7 +24,7 @@ class Distance{
 
         $angle = 2 * asin(sqrt(pow(sin($delta_latitude / 2), 2)+ cos($latitude_asal) * cos($latitude_tujuan) * pow(sin($delta_longitude / 2), 2)));
 
-        return round($angle * $radius_bumi);
+        return (double)number_format((float)$angle * $radius_bumi, 2, '.', ''); 
     }
 
     public static function vincenty_circle_distance($sumber,$tujuan){

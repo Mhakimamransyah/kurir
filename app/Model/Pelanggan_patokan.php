@@ -25,8 +25,12 @@ class Pelanggan_patokan extends Model
         return $this->belongsTo('App\Model\Pelanggan');
     }
 
-    public static function jenis_patokan(){
-    	return DB::table('jenis_patokan')->select("*")->get();
+    public static function jenis_patokan($id_jenis_patokan = null){
+        if($id_jenis_patokan == null){
+           return DB::table('jenis_patokan')->select("*")->get();
+        }else{
+           return DB::table('jenis_patokan')->select("*")->where("id_jenis_patokan",$id_jenis_patokan)->first()->jenis_patokan;
+        }
     }
 
 }

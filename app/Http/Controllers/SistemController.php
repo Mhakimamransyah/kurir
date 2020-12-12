@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Model\Sistem_destinasi;
 use App\Model\Sistem_image_information;
+use App\Model\Sistem_feedback;
 use App\Http\Helper\ResponseBuilder;
 use App\Http\Helper\Notification;
 use App\Http\MyClass\Sistem;
@@ -51,15 +52,37 @@ class SistemController extends Controller
        return Sistem::read_chat($request->toArray());
     }
 
+    public function order_pengiriman_aktif(Request $request){
+      $this->validate($request,[
+          "id_pelanggan" => "required|regex:/[0-9]/",
+       ]);
+      return Sistem::pesanan_pengiriman_aktif($request->toArray());
+    }
+
     public function sistem_landing(Request $request){
        //banner 
+       $this->validate($request,[
+          "id_pelanggan" => "required|regex:/[0-9]/",
+       ]);
        $result = Sistem_image_information::where("active",'ya')->orderBy('sequence','asc')->get();
+       $feedback = Sistem_feedback::where("id_pelanggan",$request->id_pelanggan)->count();
        $response = [
-         "jumlah_banner" => $result->count(),
-         "banner"        => $result
+         "jumlah_banner"      => $result->count(),
+         "banner"             => $result,
+         "feedback_form" => ($feedback>0)? false: true
        ];
 
        return ResponseBuilder::result(true,"Sukses",$response,200);
+    }
+
+    public function sistem_feedback(Request $request){
+     $this->validate($request,[
+          "id_pelanggan" => "required|regex:/[0-9]/",
+          "tipe"         => "required",
+          "review"       => "required"
+       ]);
+      // periksa apakah sudah ada review sebelumnya
+      return Sistem::post_feedback($request->toArray());
     }
 
     public function sistem_page(Request $request){
@@ -74,7 +97,7 @@ class SistemController extends Controller
   
 
     public function sistem_notif(Request $request){
-       // Testing notifikasi saja
+       
        $this->validate($request,[
           "token_fcm" => "required",
           "data"      => "required",
@@ -91,4 +114,6 @@ class SistemController extends Controller
        }
 
     } 
+
+   
 }

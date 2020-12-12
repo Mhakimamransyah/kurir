@@ -51,7 +51,7 @@ $router->group(['prefix'=>'user'],function() use ($router){
 	$router->post('/login','UserController@doLoginUser');
 	$router->post('/forgot','UserController@send_forgot_password');
 	$router->post('/update_forgot_password','UserController@update_forgot_password');
-    $router->post('/update_password','UserController@update_password');
+	$router->post('/update_password','UserController@update_password');
 });
 
 // router untuk akses pelanggan
@@ -79,6 +79,10 @@ $router->group(['prefix'=>'kurir'],function() use ($router){
 	$router->post('/update_real_time_kordinat','KurirController@update_kordinat_terkini');
 	$router->get('/get_real_time_kordinat','KurirController@get_kordinat_terkini');
 	$router->post('/mode','KurirController@mode_kurir');
+	$router->get('/order_baru','KurirController@get_order_baru_saya');
+	$router->get('/transaksi_aktif','KurirController@get_is_transaksi_saya_aktif');
+	$router->get('/rating','KurirController@get_rating_kurir');
+	$router->post('/logout','KurirController@kurir_logout');
 });
 
 // router untuk hal-hal yg berhubungan dengan order
@@ -96,6 +100,7 @@ $router->group(['prefix'=>'order'],function() use ($router){
 	$router->post('/kurir_tolak','OrderController@kurir_tolak_order');
 	$router->get('/lihat','OrderController@lihat_order');
 	$router->get('/maps','OrderController@lihat_maps');
+	
 
 	$router->post('/selesai_destinasi','OrderController@kurir_selesaikan_destinasi'); // di luar sesi gunakan FCM
 	$router->post('/rating','OrderController@pelanggan_rating_kurir');
@@ -106,12 +111,14 @@ $router->group(['prefix'=>'sistem','middleware' => 'auth'],function() use ($rout
 	$router->get('/',function(){
 		return "<h1>Router khusus sistem</h1>";
 	});
+	$router->get('/pesanan_pengiriman','SistemController@order_pengiriman_aktif');
 	$router->get('/landing','SistemController@sistem_landing');
 	$router->get('/page','SistemController@sistem_page');
-    $router->get('/destinasi','SistemController@sistem_destinasi');
-    $router->post('/notifikasi','SistemController@sistem_notif');
-    $router->post('/chat','SistemController@sistem_send_chat');
-    $router->post('/read-chat','SistemController@sistem_read_chat');
+	$router->get('/destinasi','SistemController@sistem_destinasi');
+	$router->post('/notifikasi','SistemController@sistem_notif');
+	$router->post('/feedback','SistemController@sistem_feedback');
+	$router->post('/chat','SistemController@sistem_send_chat');
+	$router->post('/read-chat','SistemController@sistem_read_chat');
 });
 
 

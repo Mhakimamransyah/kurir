@@ -2,6 +2,7 @@
 
 namespace App\Http\MyClass;
 use App\Http\Helper\Destinasi;
+use App\Http\Helper\Distance;
 use App\Http\Helper\Tarif;
 use App\Model\Order_m;
 use App\Model\Kurir_Kordinat;
@@ -60,7 +61,8 @@ class Lihat_order{
      $order  = Order_m::find($param["id_order"]);
      if(!empty($data)){
        $this->result["kondisi_order"]   = $order->status;
-       $this->result["kurir"]           = Kurir::find($data->id_kurir)->first()->toArray();
+       $this->result["kurir"]           = Kurir::find($data->id_kurir)->toArray();
+     
        $detail = $order->order_detail;
 
        $this->result["Jenis_order"]  = Order_m::find($param["id_order"])->order_jenis->toArray();
@@ -73,21 +75,35 @@ class Lihat_order{
           $destinasi = Destinasi::get_detail($obj_detail->order_destinasi);
           
           $tarif_destinasi = Tarif::get_total($param["id_order"],$obj_detail->tarif_charge_jarak,$obj_detail->tarif_charge_beban);
+          // $list[] = [
+          //     "id_order_detail"        => $obj_detail->id_order_detail,
+          //     "nama_barang"            => $barang->nama_barang,
+          //     "tujuan"                 => $destinasi->alamat_destinasi,
+          //     "jarak"                  => $obj_detail->jarak." km",
+          //     "charge_jarak"           => $obj_detail->tarif_charge_jarak,
+          //     "charge_beban"           => $obj_detail->tarif_charge_beban,
+          //     "tarif_total_destinasi"  => $tarif_destinasi,
+          //     "selesai"                => ($obj_detail->foto_selesai != "")? true : false,
+          //     "foto_selesai"           => $obj_detail->foto_selesai
+          // ];
+          $check_patokan = Destinasi::get_detail($obj_detail["order_destinasi"]);
+          $jenis_patokan;
+          if($destinasi["kode_patokan"] != null || $destinasi["kode_patokan"] != "" || $destinasi["kode_patokan"] != " "){
+             $jenis_patokan = Pelanggan_patokan::jenis_patokan( Pelanggan_patokan::where("kode_patokan",$destinasi["kode_patokan"])->first()["id_jenis_patokan"]);
+             $destinasi["jenis_patokan"] = $jenis_patokan;
+          }
           $list[] = [
-              "id_order_detail"        => $obj_detail->id_order_detail,
-              "nama_barang"            => $barang->nama_barang,
-              "tujuan"                 => $destinasi->alamat_destinasi,
-              "jarak"                  => $obj_detail->jarak." km",
-              "charge_jarak"           => $obj_detail->tarif_charge_jarak,
-              "charge_beban"           => $obj_detail->tarif_charge_beban,
-              "tarif_total_destinasi"  => $tarif_destinasi,
-              "selesai"                => ($obj_detail->foto_selesai != "")? true : false,
-              "foto_selesai"           => $obj_detail->foto_selesai
+              "detail"      => $obj_detail,
+              //"jenis"       => $jenis_patokan,
+              "destinasi"   => $destinasi,
+              "barang"      => $barang,
+              "selesai"     => ($obj_detail->foto_selesai != "")? true : false,
           ];
 
           $sum = $sum + $tarif_destinasi;
        }
-
+       
+       //$this->result["id_order"] = $order->id_order;
        $this->result["list"] = $list;
        $this->result["total_harga"] = $sum;
       
@@ -146,20 +162,38 @@ class Lihat_order{
 
   public function do_lihat_maps($param){
      // periksa dulu yang destination failed nya 0
+     $deskripsi = "";
+     $jarak_dihitung = 0;
+     $zoom = false;
      $this->destination_failed($param["id_order"]);
      $result = [];
      $kurir = Kurir_Geotracking::where("id_kurir",$param["id_kurir"])->first();
      
-     $result["kurir"] = [
-        "kordinat_terkini" => $kurir->kordinat_terkini,
-        "modified_date"  => $kurir->modified_date
-     ];
+     // $result["kurir"] = [
+     //    "kordinat_terkini" => $kurir->kordinat_terkini,
+     //    "modified_date"  => $kurir->modified_date
+     // ];
 
-     $saya = Order_m::where("id_order",$param["id_order"])->first();
+     $saya = Order_m::where("id_order",$param["id_order"])->first()->kordinat_order;
+     $sumber[0] = explode(",", $saya)[0];
+     $sumber[1] = str_replace(" ","",explode(",", $saya)[1]);
+     $tujuan[0] = explode(",", $kurir->kordinat_terkini)[0];
+     $tujuan[1] = explode(",", $kurir->kordinat_terkini)[1];
 
-     $result["saya"] = [
-        "kordinat_saya" => $saya->kordinat_order
-     ];
+     $jarak = Distance::haversine_circle_distance($sumber,$tujuan);
+     // ada juga di looping bawah
+     if($jarak >= 0.5 && $jarak<1){
+      $deskripsi = "dengan dengan alamat pemesan";
+        $zoom = 13;
+     }else if($jarak > 0.1 && $jarak<0.5){
+       $deskripsi = "dengan dengan alamat pemesan";
+        $zoom = 15;
+     }else if($jarak >= 0.0 && $jarak<0.1){
+        $zoom = 18;
+     }
+     // $result["saya"] = [
+     //    "kordinat_saya" => $saya->kordinat_order
+     // ];
 
      $detail = Order_m::find($param["id_order"])->order_detail;
 
@@ -167,11 +201,38 @@ class Lihat_order{
      $result["tujuan"] = [];
      foreach ($detail as $obj_detail) {
        $destinasi = $obj_detail->order_destinasi;
+       if($zoom == false){ 
+         // hanya jika ada jarak yang belum ada yang dekat
+        $sumber[0] = explode(",", Destinasi::get_detail($destinasi)->kordinat_destinasi)[0];
+        $sumber[1] = str_replace(" ","",explode(",", Destinasi::get_detail($destinasi)->kordinat_destinasi)[1]);
+        $jarak = Distance::haversine_circle_distance($sumber,$tujuan);
+          if($jarak >= 0.5 && $jarak<1){
+          $deskripsi = "dengan dengan alamat pemesan";
+            $zoom = 13;
+         }else if($jarak > 0.1 && $jarak<0.5){
+           $deskripsi = "dengan dengan alamat pemesan";
+            $zoom = 15;
+         }else if($jarak >= 0.0 && $jarak<0.1){
+            $zoom = 18;
+         }
+       }
+         
        $result["tujuan"][$kordinat_ke] = Destinasi::get_detail($destinasi)->kordinat_destinasi;
        $kordinat_ke++;
      }
 
-     return $result;
+     // hitung dulu jarak untuk setiap marker..
+     // jika kurang dari 2 km aktifkan zoom 15
+     // jika kurang dari 1 km  aktifkan zoom 20
+
+     
+     $jarak_dihitung = $jarak;
+     return [
+        "kordinat_kurir_terkini" => $kurir->kordinat_terkini,
+        "update"    => $kurir->modified_date->format("h:m:s"),
+        "zoom" => $zoom,
+        "deskripsi" => $deskripsi." , jarak : ".$jarak_dihitung
+     ];
      
   }
 
